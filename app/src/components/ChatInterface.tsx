@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, BookOpen, X, Play, Info, Sparkles } from "lucide-react";
+import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
+import { Bot, User, FileText, Loader2, Send, Minimize2, ArrowRight, BookOpen, X, Play, Info, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 mermaid.initialize({
     startOnLoad: false,
-    theme: 'dark',
+    theme: 'default',
     fontFamily: 'inherit'
 });
 
@@ -30,9 +31,9 @@ const Mermaid = ({ chart }: { chart: string }) => {
         return () => { isMounted = false; };
     }, [chart]);
 
-    if (!svg) return <div className="animate-pulse bg-gray-800/50 h-32 rounded-lg flex items-center justify-center text-sm text-gray-500">Loading diagram...</div>;
+    if (!svg) return <div className="animate-pulse bg-zinc-100 h-32 rounded-lg flex items-center justify-center text-sm text-zinc-400">Loading diagram...</div>;
 
-    return <div className="my-4 overflow-x-auto bg-gray-900/50 p-4 rounded-xl border border-gray-700/50" dangerouslySetInnerHTML={{ __html: svg }} />;
+    return <div className="my-4 overflow-x-auto bg-white p-4 rounded-xl border border-zinc-200 shadow-sm" dangerouslySetInnerHTML={{ __html: svg }} />;
 };
 
 interface Message {
@@ -113,41 +114,41 @@ export default function ChatInterface() {
         }
     };
 
-    const MarkdownRenderer = ({ content }: { content: string }) => (
+    const MarkdownRenderer = ({ content, isUser }: { content: string, isUser?: boolean }) => (
         <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
                 code(props) {
                     const { children, className, node, ...rest } = props;
                     const match = /language-(\w+)/.exec(className || '');
-                    if (!match) return <code className="bg-gray-800/80 px-1.5 py-0.5 rounded text-purple-300 text-[0.9em]" {...rest}>{children}</code>;
+                    if (!match) return <code className={`px-1.5 py-0.5 rounded text-[0.9em] ${isUser ? 'bg-white/20 text-white' : 'bg-zinc-100 text-indigo-600'}`} {...rest}>{children}</code>;
 
                     if (match[1] === 'mermaid') {
                         return <Mermaid chart={String(children).replace(/\n$/, '')} />;
                     }
                     return (
-                        <div className="relative my-4 group">
-                            <div className="absolute top-0 right-0 px-2 py-1 text-xs text-gray-500 bg-gray-800 rounded-bl-lg rounded-tr-lg opacity-80">{match[1]}</div>
-                            <pre className="bg-gray-900/80 p-4 rounded-xl overflow-x-auto border border-gray-700/50">
-                                <code className={className} {...rest}>
+                        <div className="relative my-4 group shadow-sm">
+                            <div className="absolute top-0 right-0 px-2 py-1 text-xs text-zinc-500 bg-zinc-100 rounded-bl-lg rounded-tr-lg">{match[1]}</div>
+                            <pre className="bg-zinc-50 p-4 rounded-xl overflow-x-auto border border-zinc-200">
+                                <code className={`${className} text-zinc-800 text-sm`} {...rest}>
                                     {children}
                                 </code>
                             </pre>
                         </div>
                     );
                 },
-                a: ({ node, ...props }) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors" {...props} />,
-                h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4 text-white" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3 text-gray-100 border-b border-gray-700/50 pb-2" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="text-lg font-bold mt-4 mb-2 text-gray-200" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-5 my-3 space-y-1 text-gray-300" {...props} />,
-                ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-5 my-3 space-y-1 text-gray-300" {...props} />,
+                a: ({ node, ...props }) => <a className={`${isUser ? 'text-white underline' : 'text-indigo-600 hover:text-indigo-500 underline'} underline-offset-2 transition-colors`} {...props} />,
+                h1: ({ node, ...props }) => <h1 className={`text-2xl font-bold mt-6 mb-4 ${isUser ? 'text-white' : 'text-zinc-900'}`} {...props} />,
+                h2: ({ node, ...props }) => <h2 className={`text-xl font-bold mt-5 mb-3 border-b pb-2 ${isUser ? 'text-white border-white/20' : 'text-zinc-800 border-zinc-200'}`} {...props} />,
+                h3: ({ node, ...props }) => <h3 className={`text-lg font-bold mt-4 mb-2 ${isUser ? 'text-white' : 'text-zinc-800'}`} {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-5 my-3 space-y-1" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-5 my-3 space-y-1" {...props} />,
                 li: ({ node, ...props }) => <li className="pl-1" {...props} />,
-                p: ({ node, ...props }) => <p className="leading-7 text-gray-300 mb-4 last:mb-0" {...props} />,
-                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-purple-500/50 pl-4 py-1 my-4 bg-purple-500/5 rounded-r-lg text-gray-400" {...props} />,
-                table: ({ node, ...props }) => <div className="overflow-x-auto my-4 border border-gray-700/50 rounded-lg"><table className="w-full text-left border-collapse bg-gray-800/20" {...props} /></div>,
-                th: ({ node, ...props }) => <th className="p-3 border-b border-gray-700/50 bg-gray-800/40 text-gray-200 font-semibold text-sm" {...props} />,
-                td: ({ node, ...props }) => <td className="p-3 border-b border-gray-700/50 text-gray-300 text-sm last:border-0" {...props} />,
+                p: ({ node, ...props }) => <p className="leading-relaxed mb-4 last:mb-0" {...props} />,
+                blockquote: ({ node, ...props }) => <blockquote className={`border-l-4 pl-4 py-1 my-4 rounded-r-lg ${isUser ? 'border-white/40 bg-white/10' : 'border-indigo-400 bg-indigo-50 text-zinc-600'}`} {...props} />,
+                table: ({ node, ...props }) => <div className="overflow-x-auto my-4 border border-zinc-200 rounded-lg shadow-sm"><table className="w-full text-left border-collapse bg-white" {...props} /></div>,
+                th: ({ node, ...props }) => <th className={`p-3 border-b font-semibold text-sm ${isUser ? 'border-white/20 bg-white/10' : 'border-zinc-200 bg-zinc-50 text-zinc-800'}`} {...props} />,
+                td: ({ node, ...props }) => <td className={`p-3 border-b text-sm last:border-0 ${isUser ? 'border-white/20' : 'border-zinc-200 text-zinc-700'}`} {...props} />,
             }}
         >
             {content}
@@ -158,22 +159,22 @@ export default function ChatInterface() {
         if (!sources || sources.length === 0) return null;
 
         return (
-            <div className="mt-6 border-t border-gray-700/50 pt-4">
-                <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+            <div className="mt-5 border-t border-zinc-200/60 pt-4">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-zinc-400 mb-3 uppercase tracking-wider">
                     <BookOpen className="w-3.5 h-3.5" />
                     参考ナレッジ ({sources.length})
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                <div className="flex gap-3 overflow-x-auto pb-3 pt-1 px-1 -mx-1 scrollbar-none">
                     {sources.map((s, i) => (
                         <button
                             key={i}
                             onClick={() => setSelectedSource(s)}
-                            className="flex-shrink-0 w-64 text-left group bg-gray-800/30 hover:bg-gray-700/40 border border-gray-700/50 hover:border-purple-500/30 rounded-xl p-3 transition-all duration-300 flex flex-col gap-2"
+                            className="flex-shrink-0 w-64 text-left group bg-white hover:bg-zinc-50 border border-zinc-200/80 hover:border-indigo-300 rounded-xl p-3.5 transition-all duration-300 flex flex-col gap-2 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_-6px_rgba(0,0,0,0.1)] hover:-translate-y-0.5"
                         >
-                            <div className="font-semibold text-purple-300 text-xs line-clamp-1 group-hover:text-purple-200">{s.title || s.category}</div>
-                            <div className="text-gray-400 text-[11px] leading-relaxed line-clamp-3">{s.text.replace(/#/g, '').substring(0, 100)}...</div>
-                            <div className="mt-auto pt-2 flex items-center text-[10px] text-blue-400 opacity-70 group-hover:opacity-100 transition-opacity">
-                                詳しく見る <Play className="w-2.5 h-2.5 ml-1" />
+                            <div className="font-semibold text-indigo-700 text-xs line-clamp-1 group-hover:text-indigo-600">{s.title || s.category}</div>
+                            <div className="text-zinc-500 text-[11px] leading-relaxed line-clamp-3">{s.text.replace(/#/g, '').substring(0, 100)}...</div>
+                            <div className="mt-auto pt-2 flex items-center text-[10px] text-indigo-500 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
+                                詳しく見る <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform" />
                             </div>
                         </button>
                     ))}
@@ -183,137 +184,196 @@ export default function ChatInterface() {
     };
 
     return (
-        <div className="relative flex flex-col h-screen font-sans bg-[#0c0e14] overflow-hidden text-gray-100 selection:bg-purple-500/30">
-            {/* Aurora Background */}
+        <div className="relative flex flex-col h-[100dvh] font-sans bg-zinc-50 overflow-hidden text-zinc-800 selection:bg-indigo-500/20">
+            {/* Soft Light Aurora Background */}
             <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-purple-600/10 blur-[120px] mix-blend-screen" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px] mix-blend-screen" />
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/10 blur-[100px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-sky-400/10 blur-[100px]" />
             </div>
 
             {/* Header */}
-            <header className="px-6 py-4 border-b border-gray-800/50 bg-[#0c0e14]/60 backdrop-blur-xl sticky top-0 z-10 flex items-center justify-between">
+            <header className="px-6 py-4 border-b border-zinc-200/60 bg-white/60 backdrop-blur-xl sticky top-0 z-20 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.3)] border border-white/10">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-500 flex items-center justify-center shadow-md">
                         <Sparkles className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                        <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400 tracking-tight">Obsidian Master AI</h1>
-                        <p className="text-[10px] text-gray-400 tracking-wider font-medium uppercase">Intelligent Knowledge Assistant</p>
+                    <div className="flex flex-col">
+                        <h1 className="text-[17px] font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-sky-700 tracking-tight leading-tight">Obsidian Master AI</h1>
+                        <p className="text-[10px] text-zinc-500 tracking-wider font-semibold uppercase leading-tight mt-0.5">Intelligent Knowledge Assistant</p>
                     </div>
                 </div>
             </header>
 
-            {/* Chat Area */}
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:px-10 space-y-8 max-w-5xl mx-auto w-full">
-                {messages.map((msg, idx) => (
-                    <div key={idx} className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                        {/* Avatar */}
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ${msg.role === "user" ? "bg-blue-600/90 border border-blue-500/50" : "bg-purple-600/90 border border-purple-500/50"
-                            }`}>
-                            {msg.role === "user" ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
-                        </div>
-
-                        {/* Bubble */}
-                        <div className={`max-w-[100%] sm:max-w-[85%] rounded-2xl p-5 ${msg.role === "user"
-                                ? "bg-blue-600/10 border border-blue-500/20 text-gray-100 rounded-tr-sm"
-                                : "bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 text-gray-200 rounded-tl-sm shadow-[0_4px_30px_rgba(0,0,0,0.1)]"
-                            }`}>
-                            <div className="text-[15px]">
-                                <MarkdownRenderer content={msg.content} />
+            <main className="flex-1 overflow-hidden flex flex-col max-w-4xl mx-auto w-full relative z-10">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth custom-scrollbar">
+                    {messages.length === 0 ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className="h-full flex flex-col items-center justify-center text-center space-y-8 max-w-2xl mx-auto"
+                        >
+                            <div className="w-24 h-24 bg-gradient-to-tr from-indigo-50 to-sky-50 rounded-3xl flex items-center justify-center border border-zinc-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative group">
+                                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-100 to-sky-100 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                                <Bot className="w-12 h-12 text-indigo-600 relative z-10" />
                             </div>
-
-                            {/* Sources */}
-                            {msg.role === "assistant" && msg.sources && (
-                                <SourceCards sources={msg.sources} />
+                            <div className="space-y-4">
+                                <h2 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-800 via-indigo-600 to-sky-600 tracking-tight">
+                                    Obsidianのすべてを、<br className="md:hidden" />あなたに。
+                                </h2>
+                                <p className="text-lg text-zinc-500 font-medium max-w-lg mx-auto leading-relaxed">
+                                    Zettelkastenから同期設定まで、世界最高のエージェントが完璧にお答えします。
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-xl mt-8 pt-4">
+                                {FAQ_SUGGESTIONS.map((faq, i) => (
+                                    <motion.button
+                                        key={i}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.2 + (i * 0.1), duration: 0.4 }}
+                                        onClick={() => handleSubmit(faq.text)}
+                                        whileHover={{ scale: 1.02, backgroundColor: "inherit" }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="flex items-center gap-3 text-sm bg-white border border-zinc-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 px-5 py-4 rounded-2xl text-zinc-700 transition-all shadow-sm text-left group"
+                                    >
+                                        <span className="text-xl group-hover:scale-110 transition-transform duration-300">{faq.icon}</span>
+                                        <span className="font-medium tracking-wide">{faq.text}</span>
+                                    </motion.button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <div className="space-y-8 max-w-3xl mx-auto pb-4">
+                            <AnimatePresence initial={false}>
+                                {messages.map((message, index) => (
+                                    <motion.div
+                                        key={index}
+                                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ duration: 0.4, ease: "easeOut" }}
+                                        className={`flex items-start gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                                    >
+                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${message.role === 'user'
+                                            ? 'bg-gradient-to-tr from-sky-500 to-indigo-500 ring-2 ring-indigo-500/10'
+                                            : 'bg-white ring-1 ring-zinc-200/80 shadow-md'
+                                            }`}>
+                                            {message.role === 'user' ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-indigo-600" />}
+                                        </div>
+                                        <div className={`flex flex-col gap-2 max-w-[85%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                            <div className={`p-5 rounded-3xl shadow-sm ${message.role === 'user'
+                                                ? 'bg-indigo-600 text-white rounded-tr-sm shadow-indigo-600/10'
+                                                : 'bg-white text-zinc-800 rounded-tl-sm border border-zinc-200/80 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]'
+                                                } markdown-body overflow-hidden leading-relaxed text-[15px]`}>
+                                                <MarkdownRenderer content={message.content} isUser={message.role === 'user'} />
+                                            </div>
+                                            {message.sources && message.sources.length > 0 && (
+                                                <motion.div
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    transition={{ delay: 0.3, duration: 0.8 }}
+                                                    className="w-full pl-2"
+                                                >
+                                                    <SourceCards sources={message.sources} />
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                            {isLoading && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex items-start gap-4"
+                                >
+                                    <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shrink-0 border border-zinc-200 shadow-sm animate-pulse">
+                                        <Bot className="w-5 h-5 text-indigo-400" />
+                                    </div>
+                                    <div className="px-5 py-4 bg-white rounded-3xl rounded-tl-sm border border-zinc-200/80 shadow-sm flex items-center gap-3">
+                                        <div className="flex space-x-1.5 p-1">
+                                            <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                            <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                        </div>
+                                    </div>
+                                </motion.div>
                             )}
+                            <div ref={messagesEndRef} className="h-4" />
+                        </div>
+                    )}
+                </div>
+
+                {/* Input Area */}
+                <footer className="px-4 py-6 border-t border-zinc-200/60 bg-white/80 backdrop-blur-xl relative z-20">
+                    <div className="max-w-3xl mx-auto w-full">
+                        {/* Welcome/Empty State Suggestions */}
+                        {messages.length === 1 && (
+                            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none sm:justify-center px-2">
+                                {FAQ_SUGGESTIONS.map((faq, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleSubmit(faq.text)}
+                                        className="whitespace-nowrap flex items-center gap-2 text-sm bg-white hover:bg-zinc-50 border border-zinc-200 hover:border-indigo-300 px-4 py-2.5 rounded-full text-zinc-600 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                                    >
+                                        <span className="text-base">{faq.icon}</span> <span className="font-medium">{faq.text}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        <form
+                            onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+                            className="relative flex items-center bg-white rounded-2xl border border-zinc-300 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] transition-all duration-300"
+                        >
+                            <input
+                                type="text"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="Zettelkastenとは何ですか？"
+                                className="w-full bg-transparent py-4 pl-6 pr-14 outline-none text-zinc-800 placeholder-zinc-400 text-[15px] font-medium"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!input.trim() || isLoading}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:active:scale-100 text-white p-2 md:p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md shadow-indigo-600/20"
+                            >
+                                <Send className="w-4 h-4 md:w-5 md:h-5 ml-0.5" />
+                            </button>
+                        </form>
+                        <div className="text-center mt-3 text-[11px] text-zinc-400 font-medium tracking-wide">
+                            Answers are powered by a curated Obsidian Knowledge Base.
                         </div>
                     </div>
-                ))}
+                </footer>
 
-                {isLoading && (
-                    <div className="flex gap-4 max-w-5xl mx-auto w-full">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-600/90 border border-purple-500/50 flex items-center justify-center flex-shrink-0 shadow-lg">
-                            <Bot className="w-5 h-5 text-white animate-pulse" />
-                        </div>
-                        <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl rounded-tl-sm p-5 flex gap-2 items-center shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
-                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                {/* Source Detail Modal */}
+                {selectedSource && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-900/40 backdrop-blur-sm" onClick={() => setSelectedSource(null)}>
+                        <div
+                            className="w-full max-w-3xl max-h-[90vh] bg-white border border-zinc-200 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="px-6 py-5 flex items-center justify-between border-b border-zinc-100 bg-zinc-50/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600 shadow-sm border border-indigo-200/50">
+                                        <Info className="w-5 h-5" />
+                                    </div>
+                                    <h2 className="font-bold text-zinc-800 text-lg">{selectedSource.title || selectedSource.category || "ソース詳細"}</h2>
+                                </div>
+                                <button onClick={() => setSelectedSource(null)} className="p-2 text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100 rounded-xl transition-all active:scale-95">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="p-8 overflow-y-auto flex-1 bg-white">
+                                <div className="prose prose-zinc max-w-none text-[15px] leading-relaxed">
+                                    <MarkdownRenderer content={selectedSource.text} />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
-                <div ref={messagesEndRef} className="h-4" />
             </main>
-
-            {/* Input Area */}
-            <footer className="px-4 py-6 border-t border-gray-800/50 bg-[#0c0e14]/80 backdrop-blur-xl">
-                <div className="max-w-4xl mx-auto w-full">
-                    {/* Welcome/Empty State Suggestions */}
-                    {messages.length === 1 && (
-                        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none sm:justify-center">
-                            {FAQ_SUGGESTIONS.map((faq, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => handleSubmit(faq.text)}
-                                    className="whitespace-nowrap flex items-center gap-2 text-sm bg-gray-800/40 hover:bg-gray-700/60 border border-gray-700/50 hover:border-purple-500/40 px-4 py-2.5 rounded-xl text-gray-300 transition-all shadow-sm"
-                                >
-                                    <span className="text-base">{faq.icon}</span> {faq.text}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    <form
-                        onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
-                        className="relative flex items-center"
-                    >
-                        <input
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            placeholder="Zettelkastenとは何ですか？"
-                            className="w-full bg-gray-900/50 backdrop-blur-md border border-gray-700/50 hover:border-gray-600 focus:border-purple-500 rounded-2xl py-4 pl-6 pr-14 outline-none text-gray-100 placeholder-gray-500 shadow-inner transition-all text-[15px]"
-                        />
-                        <button
-                            type="submit"
-                            disabled={!input.trim() || isLoading}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:grayscale text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-lg"
-                        >
-                            <Send className="w-4 h-4 ml-0.5" />
-                        </button>
-                    </form>
-                    <div className="text-center mt-3 text-[10px] text-gray-500 font-medium">
-                        Responses are generated by Claude using a curated Obsidian Knowledge Base.
-                    </div>
-                </div>
-            </footer>
-
-            {/* Source Detail Modal (Slide over or pop up) */}
-            {selectedSource && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#0c0e14]/80 backdrop-blur-md" onClick={() => setSelectedSource(null)}>
-                    <div
-                        className="w-full max-w-4xl max-h-[90vh] bg-gray-900/90 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-800 bg-gray-800/20">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-purple-500/20 p-2 rounded-lg text-purple-400">
-                                    <Info className="w-5 h-5" />
-                                </div>
-                                <h2 className="font-bold text-gray-100">{selectedSource.title || selectedSource.category || "ソース詳細"}</h2>
-                            </div>
-                            <button onClick={() => setSelectedSource(null)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <div className="prose prose-invert max-w-none text-[15px]">
-                                <MarkdownRenderer content={selectedSource.text} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
