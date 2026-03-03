@@ -343,12 +343,12 @@ export default function ChatInterface() {
                     <div className="max-w-3xl mx-auto w-full">
                         {/* Welcome/Empty State Suggestions */}
                         {messages.length === 1 && (
-                            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none sm:justify-center px-2">
+                            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 px-2 scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-track-transparent snap-x w-full">
                                 {FAQ_SUGGESTIONS.map((faq, i) => (
                                     <button
                                         key={i}
                                         onClick={() => handleSubmit(faq.text)}
-                                        className="whitespace-nowrap flex items-center gap-2 text-sm bg-white hover:bg-zinc-50 border border-zinc-200 hover:border-indigo-300 px-4 py-2.5 rounded-full text-zinc-600 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                                        className="snap-start flex-shrink-0 whitespace-nowrap flex items-center gap-2 text-sm bg-white hover:bg-zinc-50 border border-zinc-200 hover:border-indigo-300 px-4 py-2.5 rounded-full text-zinc-600 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
                                     >
                                         <span className="text-base">{faq.icon}</span> <span className="font-medium">{faq.text}</span>
                                     </button>

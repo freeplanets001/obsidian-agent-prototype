@@ -28,15 +28,18 @@ ${context || '特に提供されたナレッジはありません。'}
 - 手順はステップ形式で分かりやすく説明する
 - プラグイン名・設定名は正確に記載する`;
 
+        // Check if messages exist and are formatted properly
+        if (!messages || !Array.isArray(messages)) {
+            return NextResponse.json({ reply: 'Invalid request format' }, { status: 400 });
+        }
+
         // Map client messages to Anthropic's format
         const anthropicMessages = messages.map((msg: any) => {
-            const content = [];
-
             if (msg.image) {
-                // Ensure image is a valid base64 representation
+                const blockContent = [];
                 const match = msg.image.match(/^data:(image\/[a-zA-Z]*);base64,([^\"]*)$/);
                 if (match) {
-                    content.push({
+                    blockContent.push({
                         type: "image",
                         source: {
                             type: "base64",
@@ -45,18 +48,24 @@ ${context || '特に提供されたナレッジはありません。'}
                         }
                     });
                 }
+
+                if (msg.content) {
+                    blockContent.push({
+                        type: "text",
+                        text: msg.content
+                    });
+                }
+
+                return {
+                    role: msg.role === 'assistant' ? 'assistant' : 'user',
+                    content: blockContent
+                };
             }
 
-            if (msg.content) {
-                content.push({
-                    type: "text",
-                    text: msg.content
-                });
-            }
-
+            // Normal text message
             return {
-                role: msg.role === 'user' ? 'user' : 'assistant',
-                content: content
+                role: msg.role === 'assistant' ? 'assistant' : 'user',
+                content: msg.content
             };
         });
 
