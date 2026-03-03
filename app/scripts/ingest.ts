@@ -16,7 +16,12 @@ interface VectorRecord {
   embedding: number[];
 }
 
-const KNOWLEDGE_FILE = path.join(__dirname, '../../knowledge/obsidian_knowledge_base.md');
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const KNOWLEDGE_DIR = path.join(__dirname, '../../knowledge');
 const DB_FILE = path.join(__dirname, '../data/vector_db.json');
 
 async function generateEmbedding(text: string): Promise<number[]> {
@@ -78,21 +83,37 @@ function chunkMarkdown(markdown: string): { title: string, category: string, con
 async function main() {
   console.log('Starting ingestion process...');
 
-  if (!fs.existsSync(KNOWLEDGE_FILE)) {
-    console.error(`Knowledge file not found at ${KNOWLEDGE_FILE}`);
+  if (!fs.existsSync(KNOWLEDGE_DIR)) {
+    console.error(`Knowledge directory not found at ${KNOWLEDGE_DIR}`);
     return;
   }
 
-  const markdown = fs.readFileSync(KNOWLEDGE_FILE, 'utf-8');
-  console.log(`Read markdown file: ${markdown.length} characters.`);
+  const files = fs.readdirSync(KNOWLEDGE_DIR).filter(file => file.endsWith('.md'));
+  console.log(`Found ${files.length} markdown files in ${KNOWLEDGE_DIR}`);
 
-  const chunks = chunkMarkdown(markdown);
-  console.log(`Split markdown into ${chunks.length} chunks.`);
+  let allChunks: { title: string, category: string, content: string }[] = [];
+
+  for (const file of files) {
+    const filePath = path.join(KNOWLEDGE_DIR, file);
+    const markdown = fs.readFileSync(filePath, 'utf-8');
+    console.log(`Read ${file}: ${markdown.length} characters.`);
+
+    const chunks = chunkMarkdown(markdown);
+    console.log(`Split ${file} into ${chunks.length} chunks.`);
+
+    // Annotate chunks with the file name for better search context 
+    const annotatedChunks = chunks.map(chunk => ({
+      ...chunk,
+      category: `[${file}] ${chunk.category}`,
+    }));
+
+    allChunks = allChunks.concat(annotatedChunks);
+  }
 
   const records: VectorRecord[] = [];
 
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
+  for (let i = 0; i < allChunks.length; i++) {
+    const chunk = allChunks[i];
     const embedding = await generateEmbedding(chunk.content);
 
     records.push({
