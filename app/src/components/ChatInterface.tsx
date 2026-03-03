@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
-import { Bot, User, FileText, Loader2, Send, Minimize2, ArrowRight, BookOpen, X, Play, Info, Sparkles } from 'lucide-react';
+import { Bot, User, FileText, Loader2, Send, Minimize2, ArrowRight, BookOpen, X, Play, Info, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 mermaid.initialize({
@@ -40,6 +40,7 @@ interface Message {
     role: "user" | "assistant";
     content: string;
     sources?: any[];
+    image?: string; // base64 encoded image
 }
 
 const FAQ_SUGGESTIONS = [
@@ -58,20 +59,44 @@ export default function ChatInterface() {
         }
     ]);
     const [input, setInput] = useState("");
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedSource, setSelectedSource] = useState<any | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isLoading]);
 
-    const handleSubmit = async (text: string = input) => {
-        if (!text.trim()) return;
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-        const userMessage: Message = { role: "user", content: text };
+        if (!file.type.startsWith('image/')) {
+            alert('画像ファイルを選択してください');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                setSelectedImage(event.target.result as string);
+            }
+        };
+        reader.readAsDataURL(file);
+        // Reset input value so the same file can be selected again if removed
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleSubmit = async (text: string = input) => {
+        if (!text.trim() && !selectedImage) return;
+
+        const userMessage: Message = { role: "user", content: text, ...(selectedImage && { image: selectedImage }) };
         setMessages(prev => [...prev, userMessage]);
         setInput("");
+        const imageToSubmit = selectedImage; // Store local ref for the API call
+        setSelectedImage(null);
         setIsLoading(true);
 
         try {
@@ -87,7 +112,11 @@ export default function ChatInterface() {
                 `[Source ${i + 1} - ${doc.title}]\n${doc.text}`
             ).join('\n\n');
 
-            const apiMessages = [{ role: "user", content: text }];
+            const apiMessages = [{
+                role: "user",
+                content: text,
+                ...(imageToSubmit && { image: imageToSubmit })
+            }];
 
             const chatRes = await fetch('/api/chat', {
                 method: 'POST',
@@ -164,12 +193,12 @@ export default function ChatInterface() {
                     <BookOpen className="w-3.5 h-3.5" />
                     参考ナレッジ ({sources.length})
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-3 pt-1 px-1 -mx-1 scrollbar-none">
+                <div className="flex gap-3 overflow-x-auto pb-4 pt-1 px-1 -mx-1 snap-x scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-track-transparent">
                     {sources.map((s, i) => (
                         <button
                             key={i}
                             onClick={() => setSelectedSource(s)}
-                            className="flex-shrink-0 w-64 text-left group bg-white hover:bg-zinc-50 border border-zinc-200/80 hover:border-indigo-300 rounded-xl p-3.5 transition-all duration-300 flex flex-col gap-2 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_-6px_rgba(0,0,0,0.1)] hover:-translate-y-0.5"
+                            className="snap-start flex-shrink-0 w-64 text-left group bg-white hover:bg-zinc-50 border border-zinc-200/80 hover:border-indigo-300 rounded-xl p-3.5 transition-all duration-300 flex flex-col gap-2 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_-6px_rgba(0,0,0,0.1)] hover:-translate-y-0.5"
                         >
                             <div className="font-semibold text-indigo-700 text-xs line-clamp-1 group-hover:text-indigo-600">{s.title || s.category}</div>
                             <div className="text-zinc-500 text-[11px] leading-relaxed line-clamp-3">{s.text.replace(/#/g, '').substring(0, 100)}...</div>
@@ -265,6 +294,11 @@ export default function ChatInterface() {
                                                 ? 'bg-indigo-600 text-white rounded-tr-sm shadow-indigo-600/10'
                                                 : 'bg-white text-zinc-800 rounded-tl-sm border border-zinc-200/80 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]'
                                                 } markdown-body overflow-hidden leading-relaxed text-[15px]`}>
+                                                {message.image && (
+                                                    <div className="mb-3 rounded-lg overflow-hidden border border-white/20">
+                                                        <img src={message.image} alt="User attachment" className="max-w-full h-auto max-h-60 object-contain" />
+                                                    </div>
+                                                )}
                                                 <MarkdownRenderer content={message.content} isUser={message.role === 'user'} />
                                             </div>
                                             {message.sources && message.sources.length > 0 && (
@@ -322,16 +356,42 @@ export default function ChatInterface() {
                             </div>
                         )}
 
+                        {selectedImage && (
+                            <div className="mb-3 p-2 bg-white rounded-xl border border-zinc-200 inline-flex items-start relative shadow-sm">
+                                <img src={selectedImage} alt="Preview" className="h-16 w-auto rounded-lg object-contain" />
+                                <button
+                                    onClick={() => setSelectedImage(null)}
+                                    className="absolute -top-2 -right-2 bg-zinc-800 text-white rounded-full p-1 shadow-md hover:bg-zinc-700 transition-colors"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        )}
+
                         <form
                             onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
                             className="relative flex items-center bg-white rounded-2xl border border-zinc-300 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] transition-all duration-300"
                         >
                             <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-indigo-600 p-2 transition-colors rounded-xl hover:bg-zinc-50"
+                            >
+                                <ImageIcon className="w-5 h-5" />
+                            </button>
+                            <input
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Zettelkastenとは何ですか？"
-                                className="w-full bg-transparent py-4 pl-6 pr-14 outline-none text-zinc-800 placeholder-zinc-400 text-[15px] font-medium"
+                                className="w-full bg-transparent py-4 pl-12 pr-14 outline-none text-zinc-800 placeholder-zinc-400 text-[15px] font-medium"
                             />
                             <button
                                 type="submit"

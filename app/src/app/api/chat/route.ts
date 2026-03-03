@@ -28,17 +28,49 @@ ${context || '特に提供されたナレッジはありません。'}
 - 手順はステップ形式で分かりやすく説明する
 - プラグイン名・設定名は正確に記載する`;
 
+        // Map client messages to Anthropic's format
+        const anthropicMessages = messages.map((msg: any) => {
+            const content = [];
+
+            if (msg.image) {
+                // Ensure image is a valid base64 representation
+                const match = msg.image.match(/^data:(image\/[a-zA-Z]*);base64,([^\"]*)$/);
+                if (match) {
+                    content.push({
+                        type: "image",
+                        source: {
+                            type: "base64",
+                            media_type: match[1],
+                            data: match[2],
+                        }
+                    });
+                }
+            }
+
+            if (msg.content) {
+                content.push({
+                    type: "text",
+                    text: msg.content
+                });
+            }
+
+            return {
+                role: msg.role === 'user' ? 'user' : 'assistant',
+                content: content
+            };
+        });
+
         // Call the Anthropic API
         const response = await anthropic.messages.create({
-            model: 'claude-3-haiku-20240307', // Fallback to Claude 3 Haiku
+            model: 'claude-3-haiku-20240307', // Fallback to Claude 3 Haiku for speed & cost, it supports vision
             max_tokens: 1024,
             system: systemPrompt,
-            messages: messages,
+            messages: anthropicMessages as any[],
         });
 
         // Check if the response contains text blocks
         const contentBlock = response.content[0];
-        const textCode = contentBlock.type === 'text' ? contentBlock.text : '';
+        const textCode = contentBlock?.type === 'text' ? contentBlock.text : '分析結果がありません。';
 
         return NextResponse.json({ reply: textCode });
 
